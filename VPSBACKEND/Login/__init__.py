@@ -2,7 +2,8 @@ from fastapi import APIRouter, Request, HTTPException, Depends, Response
 from sqlalchemy.orm import Session
 from VPSBACKEND.database import get_db
 from VPSBACKEND.Database.models import User
-from VPSBACKEND.Login.Coockis import create_token, set_cookie
+#from VPSBACKEND.Login.Coockis import create_token, set_cookie
+from VPSBACKEND.Login.Coockis import create_token, set_cookie, clear_cookie
 from VPSBACKEND.utils.ip_check import check_ip
 from VPSBACKEND.utils.turnstile import verify_turnstile
 from VPSBACKEND.__main__ import limiter

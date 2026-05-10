@@ -127,3 +127,8 @@ async def _send_login_alert(email: str, ip: str, request: Request):
         device   = device,
         location = location,
   )
+
+@router.post("/logout")
+async def logout(response: Response):
+    clear_cookie(response)
+    return {"message": "Logged out successfully"}

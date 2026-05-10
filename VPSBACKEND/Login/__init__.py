@@ -2,11 +2,10 @@ from fastapi import APIRouter, Request, HTTPException, Depends, Response
 from sqlalchemy.orm import Session
 from VPSBACKEND.database import get_db
 from VPSBACKEND.Database.models import User
-#from VPSBACKEND.Login.Coockis import create_token, set_cookie
 from VPSBACKEND.Login.Coockis import create_token, set_cookie, clear_cookie
 from VPSBACKEND.utils.ip_check import check_ip
 from VPSBACKEND.utils.turnstile import verify_turnstile
-from VPSBACKEND.__main__ import limiter
+from VPSBACKEND.utils.limiter import limiter            # ← FIX: __main__ nahi, limiter.py se
 import bcrypt
 import httpx
 import asyncio
@@ -39,7 +38,6 @@ async def get_location(ip: str) -> dict:
 
 def get_device_info(request: Request) -> str:
     ua = request.headers.get("user-agent", "Unknown")
-
     device  = "Mobile" if "Mobile" in ua else ("Tablet" if "Tablet" in ua else "Desktop")
     browser = next((b for b in ["Edge", "Chrome", "Firefox", "Safari"] if b in ua), "Unknown Browser")
     os_name = (
@@ -54,20 +52,46 @@ def get_device_info(request: Request) -> str:
 
 
 # ─────────────────────────────────────────
-# Login Endpoint
+# GET /api/auth/me
+# ─────────────────────────────────────────
+
+@router.get("/me")
+async def get_me(
+    request: Request,
+    db:      Session = Depends(get_db),
+):
+    from VPSBACKEND.Login.Coockis import get_current_user
+    current_user = get_current_user(request)
+    user = db.query(User).filter(User.id == current_user["user_id"]).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+
+    return {
+        "id":           user.id,
+        "email":        user.email,
+        "role":         user.role,
+        "is_verified":  user.is_verified,
+        "is_suspended": user.is_suspended,
+        "wallet_balance": user.wallet_balance,
+        "created_at":   user.created_at,
+    }
+
+
+# ─────────────────────────────────────────
+# POST /api/auth/login
 # ─────────────────────────────────────────
 
 @router.post("/login")
 @limiter.limit("5/minute")
 async def login(
-    request: Request,
-    response: Response,
-    db: Session = Depends(get_db)
+    request:      Request,
+    response:     Response,
+    db:           Session = Depends(get_db),
 ):
     body     = await request.json()
     email    = body.get("email", "").strip().lower()
     password = body.get("password", "")
-    cf_token = body.get("cf_turnstile_token", "")  # from frontend
+    cf_token = body.get("cf_turnstile_token", "")
     ip       = request.client.host
 
     # ── 1. Basic validation ──
@@ -127,9 +151,15 @@ async def _send_login_alert(email: str, ip: str, request: Request):
         ip       = ip,
         device   = device,
         location = location,
-  )
+    )
+
+
+# ─────────────────────────────────────────
+# POST /api/auth/logout
+# ─────────────────────────────────────────
 
 @router.post("/logout")
 async def logout(response: Response):
     clear_cookie(response)
     return {"message": "Logged out successfully"}
+    

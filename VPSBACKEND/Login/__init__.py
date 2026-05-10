@@ -119,6 +119,9 @@ async def login(
         raise HTTPException(401, "Invalid email or password")
 
     # ── 5. Password check ──
+    if not user.password_hash:
+        raise HTTPException(401, "This account uses Google or GitHub login. Please use OAuth to sign in")
+
     if not bcrypt.checkpw(password.encode(), user.password_hash.encode()):
         raise HTTPException(401, "Invalid email or password")
 
@@ -162,4 +165,5 @@ async def _send_login_alert(email: str, ip: str, request: Request):
 async def logout(response: Response):
     clear_cookie(response)
     return {"message": "Logged out successfully"}
+
     

@@ -64,11 +64,12 @@ class User(Base):
     created_at     = Column(DateTime, default=datetime.utcnow)
     updated_at     = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    vps_orders     = relationship("VPSOrder", back_populates="user")
-    payments       = relationship("Payment", back_populates="user", foreign_keys="Payment.user_id")
-    tickets        = relationship("SupportTicket", back_populates="user")
-    trial          = relationship("Trial", back_populates="user", uselist=False)
-    appeal         = relationship("Appeal", back_populates="user")
+    vps_orders    = relationship("VPSOrder", back_populates="user")
+    payments      = relationship("Payment", back_populates="user", foreign_keys="Payment.user_id")
+    tickets       = relationship("SupportTicket", back_populates="user")
+    trial         = relationship("Trial", back_populates="user", uselist=False)
+    appeal        = relationship("Appeal", back_populates="user")
+    reset_tokens  = relationship("PasswordResetToken", back_populates="user")
 
 
 class AWSAccount(Base):
@@ -222,6 +223,7 @@ class PortRule(Base):
 
     vps        = relationship("VPSOrder", back_populates="port_rules")
 
+
 class PlanStock(Base):
     __tablename__ = "plan_stock"
 
@@ -230,3 +232,21 @@ class PlanStock(Base):
     is_available  = Column(Boolean, default=True)
     updated_at    = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     updated_by    = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+
+# ─────────────────────────────────────────
+# Password Reset Token
+# ─────────────────────────────────────────
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    user_id    = Column(Integer, ForeignKey("users.id"), nullable=False)
+    token      = Column(String(64), unique=True, nullable=False, index=True)
+    expires_at = Column(DateTime, nullable=False)
+    is_used    = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user       = relationship("User", back_populates="reset_tokens")
+    

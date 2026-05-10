@@ -1,7 +1,5 @@
 import bcrypt
 import asyncio
-import secrets
-import httpx
 import os
 
 from fastapi import APIRouter, Request, HTTPException, Depends
@@ -11,7 +9,8 @@ from VPSBACKEND.database import get_db
 from VPSBACKEND.Database.models import User
 from VPSBACKEND.utils.ip_check import check_ip
 from VPSBACKEND.utils.turnstile import verify_turnstile
-from VPSBACKEND.__main__ import limiter
+from VPSBACKEND.utils.limiter import limiter            # ← FIX: __main__ nahi, limiter.py se
+import httpx
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
@@ -23,10 +22,6 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 # ─────────────────────────────────────────
 
 def is_strong_password(password: str) -> tuple[bool, str]:
-    """
-    Returns (True, "") if strong.
-    Returns (False, reason) if weak.
-    """
     if len(password) < 8:
         return False, "Password must be at least 8 characters"
     if not any(c.isupper() for c in password):
@@ -42,8 +37,7 @@ def is_strong_password(password: str) -> tuple[bool, str]:
 
 def is_valid_email(email: str) -> bool:
     import re
-    pattern = r"^[\w\.-]+@[\w\.-]+\.\w{2,}$"
-    return bool(re.match(pattern, email))
+    return bool(re.match(r"^[\w\.-]+@[\w\.-]+\.\w{2,}$", email))
 
 
 async def get_location(ip: str) -> dict:
@@ -66,14 +60,14 @@ async def get_location(ip: str) -> dict:
 
 
 # ─────────────────────────────────────────
-# Register Endpoint
+# POST /api/auth/register
 # ─────────────────────────────────────────
 
 @router.post("/register")
 @limiter.limit("3/minute")
 async def register(
     request: Request,
-    db: Session = Depends(get_db)
+    db:      Session = Depends(get_db),
 ):
     body     = await request.json()
     email    = body.get("email", "").strip().lower()
@@ -134,11 +128,7 @@ async def register(
 
     # ── 9. Send welcome email (background) ──
     asyncio.create_task(
-        _send_welcome_alert(
-            email   = email,
-            ip      = ip,
-            request = request,
-        )
+        _send_welcome_alert(email=email, ip=ip, request=request)
     )
 
     return {
@@ -163,11 +153,11 @@ async def _send_welcome_alert(email: str, ip: str, request: Request):
         "Linux"   if "Linux" in ua else
         "Unknown OS"
     )
-    device_info = f"{browser} on {os_name} ({device})"
 
     await send_welcome_email(
-        to_email = email,
-        ip       = ip,
-        device   = device_info,
-        location = location,
-  )
+        to_email    = email,
+        ip          = ip,
+        device      = f"{browser} on {os_name} ({device})",
+        location    = location,
+    )
+    

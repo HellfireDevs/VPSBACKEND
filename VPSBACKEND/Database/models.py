@@ -222,3 +222,11 @@ class PortRule(Base):
 
     vps        = relationship("VPSOrder", back_populates="port_rules")
 
+class PlanStock(Base):
+    __tablename__ = "plan_stock"
+
+    id            = Column(Integer, primary_key=True, index=True)
+    instance_type = Column(String(50), unique=True, nullable=False)
+    is_available  = Column(Boolean, default=True)
+    updated_at    = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_by    = Column(Integer, ForeignKey("users.id"), nullable=True)

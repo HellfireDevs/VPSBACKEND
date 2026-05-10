@@ -54,7 +54,7 @@ class User(Base):
 
     id             = Column(Integer, primary_key=True, index=True)
     email          = Column(String(255), unique=True, nullable=False, index=True)
-    password_hash  = Column(String(255), nullable=False)
+    password_hash  = Column(String(255), nullable=True)
     ip_address     = Column(String(45), nullable=True)
     is_verified    = Column(Boolean, default=False)
     is_suspended   = Column(Boolean, default=False)
@@ -249,4 +249,4 @@ class PasswordResetToken(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user       = relationship("User", back_populates="reset_tokens")
-    
+

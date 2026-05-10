@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from VPSBACKEND.database import get_db
 from VPSBACKEND.Database.models import VPSOrder, VPSStatus
 from VPSBACKEND.Login.Coockis import get_current_user
-from VPSBACKEND.utils.aws import get_ec2
-from VPSBACKEND.__main__ import limiter
+from VPSBACKEND.utils.aws import get_ec2_from_db_account    # ← FIX: per-account
+from VPSBACKEND.utils.limiter import limiter                # ← FIX: limiter.py se
 
 router = APIRouter(prefix="/api/vps", tags=["VPS"])
 
@@ -36,7 +36,7 @@ async def start_vps(
         raise HTTPException(400, "VPS is already running")
 
     try:
-        ec2 = get_ec2()
+        ec2 = get_ec2_from_db_account(vps.aws_account)     # ← FIX
         ec2.start_instances(InstanceIds=[vps.instance_id])
         vps.status = VPSStatus.active
         db.commit()
@@ -59,7 +59,7 @@ async def stop_vps(
         raise HTTPException(400, "VPS is not running")
 
     try:
-        ec2 = get_ec2()
+        ec2 = get_ec2_from_db_account(vps.aws_account)     # ← FIX
         ec2.stop_instances(InstanceIds=[vps.instance_id])
         vps.status = VPSStatus.stopped
         db.commit()
@@ -82,8 +82,9 @@ async def restart_vps(
         raise HTTPException(400, "VPS must be running to restart")
 
     try:
-        ec2 = get_ec2()
+        ec2 = get_ec2_from_db_account(vps.aws_account)     # ← FIX
         ec2.reboot_instances(InstanceIds=[vps.instance_id])
         return {"message": "VPS restarted successfully", "vps_id": vps_id}
     except Exception as e:
         raise HTTPException(500, f"Failed to restart VPS: {str(e)}")
+        

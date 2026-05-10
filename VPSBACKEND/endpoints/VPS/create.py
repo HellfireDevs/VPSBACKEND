@@ -6,7 +6,7 @@ from datetime import datetime
 from VPSBACKEND.database import get_db
 from VPSBACKEND.Database.models import VPSOrder, VPSStatus, AWSAccount, AWSAccountType
 from VPSBACKEND.Login.Coockis import get_current_user
-from VPSBACKEND.__main__ import limiter
+from VPSBACKEND.utils.limiter import limiter
 from VPSBACKEND.utils.tasks import launch_vps_task
 
 router = APIRouter(prefix="/api/vps", tags=["VPS"])
@@ -88,3 +88,4 @@ async def create_vps(
         "status":     "pending",
         "info":       "Use /api/vps/{id}/status to track progress",
     }
+    

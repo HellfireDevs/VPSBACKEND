@@ -13,54 +13,41 @@ from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
 from VPSBACKEND.database import init_db
-from VPSBACKEND.utils.limiter import limiter          # ← FIX: alag file se import
+from VPSBACKEND.utils.limiter import limiter
 
 import uvicorn
 
-# ─────────────────────────────────────────
-# Logging Setup
-# ─────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s → %(message)s",
 )
 logger = logging.getLogger("VPSBACKEND")
 
-# ─────────────────────────────────────────
-# ENV
-# ─────────────────────────────────────────
 ENV           = os.getenv("ENV", "development")
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
 FRONTEND_URL  = os.getenv("FRONTEND_URL", "http://localhost:3000")
 IS_PROD       = ENV == "production"
 
-# ─────────────────────────────────────────
-# Lifespan (Startup / Shutdown)
-# ─────────────────────────────────────────
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("🚀 VPSBACKEND Starting...")
     logger.info(f"   ENV  → {ENV}")
     logger.info(f"   Docs → {'DISABLED' if IS_PROD else '/docs'}")
 
-    # ── Database ──────────────────────────
     init_db()
     logger.info("✅ Database ready.")
 
-    # ── Auth Routers (endpoints/ ke bahar hain) ──   ← FIX
     _mount_auth_routers(app)
     logger.info("✅ Auth routers mounted.")
 
-    # ── Endpoints (autoloader) ────────────
     autoload_endpoints(app)
     logger.info("✅ All endpoints loaded.")
 
     yield
     logger.info("🛑 VPSBACKEND Shutting down...")
 
-# ─────────────────────────────────────────
-# FastAPI App
-# ─────────────────────────────────────────
+
 app = FastAPI(
     title="VPSBACKEND",
     version="1.0.0",
@@ -70,16 +57,10 @@ app = FastAPI(
     openapi_url=None if IS_PROD else "/openapi.json",
 )
 
-# ─────────────────────────────────────────
-# Rate Limiter Middleware
-# ─────────────────────────────────────────
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
-# ─────────────────────────────────────────
-# CORS
-# ─────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins    =[FRONTEND_URL] if IS_PROD else ["*"],
@@ -88,18 +69,13 @@ app.add_middleware(
     allow_headers    =["Content-Type", "Authorization"],
 )
 
-# ─────────────────────────────────────────
-# Trusted Hosts (Production mein)
-# ─────────────────────────────────────────
 if IS_PROD:
     app.add_middleware(
         TrustedHostMiddleware,
         allowed_hosts=ALLOWED_HOSTS,
     )
 
-# ─────────────────────────────────────────
-# Security Headers Middleware
-# ─────────────────────────────────────────
+
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
     response = await call_next(request)
@@ -115,9 +91,7 @@ async def security_headers(request: Request, call_next):
     response.headers.pop("x-powered-by", None)
     return response
 
-# ─────────────────────────────────────────
-# IP Logging Middleware
-# ─────────────────────────────────────────
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     ip = get_remote_address(request)
@@ -126,30 +100,29 @@ async def log_requests(request: Request, call_next):
     logger.info(f"  → {response.status_code}")
     return response
 
-# ─────────────────────────────────────────
-# Global Error Handlers
-# ─────────────────────────────────────────
+
 @app.exception_handler(Exception)
 async def global_error_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled error: {exc}")
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
+
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: HTTPException):
     return JSONResponse(status_code=404, content={"detail": "Not found"})
 
-# ─────────────────────────────────────────
-# Health Check
-# ─────────────────────────────────────────
+
 @app.get("/health", tags=["System"])
 async def health():
     return {"status": "ok", "env": ENV}
 
+
 # ─────────────────────────────────────────
-# Auth Routers Mount                        ← FIX: Login endpoints manually mount
-# (Login/ folder endpoints/ ke bahar hai)
+# Auth Routers Mount
 # ─────────────────────────────────────────
+
 def _mount_auth_routers(app: FastAPI):
+    # Email/password login
     try:
         from VPSBACKEND.Login import router as login_router
         app.include_router(login_router)
@@ -157,6 +130,7 @@ def _mount_auth_routers(app: FastAPI):
     except Exception as e:
         logger.error(f"  ❌ Failed → Login: {e}")
 
+    # Registration
     try:
         from VPSBACKEND.Login.Registration import router as register_router
         app.include_router(register_router)
@@ -164,9 +138,19 @@ def _mount_auth_routers(app: FastAPI):
     except Exception as e:
         logger.error(f"  ❌ Failed → Registration: {e}")
 
+    # Google + GitHub OAuth
+    try:
+        from VPSBACKEND.Login.OAuth import router as oauth_router
+        app.include_router(oauth_router)
+        logger.info("  ✅ Loaded → OAuth (Google + GitHub)")
+    except Exception as e:
+        logger.error(f"  ❌ Failed → OAuth: {e}")
+
+
 # ─────────────────────────────────────────
 # Autoloader (endpoints/ folder)
 # ─────────────────────────────────────────
+
 def autoload_endpoints(app: FastAPI):
     base = os.path.join(os.path.dirname(__file__), "endpoints")
     for folder in os.listdir(base):
@@ -184,9 +168,7 @@ def autoload_endpoints(app: FastAPI):
         except Exception as e:
             logger.error(f"  ❌ Failed → {folder}: {e}")
 
-# ─────────────────────────────────────────
-# Run
-# ─────────────────────────────────────────
+
 if __name__ == "__main__":
     uvicorn.run(
         "VPSBACKEND.__main__:app",
@@ -196,5 +178,5 @@ if __name__ == "__main__":
         workers=int(os.getenv("WORKERS", 1)),
         proxy_headers=True,
         forwarded_allow_ips="*",
-        )
+    )
     

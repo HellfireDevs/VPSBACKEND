@@ -220,6 +220,27 @@ def stop_expired_vps():
                 vps.status = VPSStatus.expired
                 db.commit()
                 logger.info(f"[Cron] VPS {vps.id} expired and stopped.")
+
+                # ── Trial VPS hai? → User ko expiry email bhejo ──
+                from VPSBACKEND.Database.models import Trial
+                is_trial = db.query(Trial).filter(
+                    Trial.user_id        == vps.user_id,
+                    Trial.aws_account_id == vps.aws_account_id,
+                ).first()
+
+                if is_trial:
+                    try:
+                        from VPSBACKEND.Notification import send_trial_expiry_email
+                        expired_str = now.strftime("%d %B %Y, %I:%M %p UTC")
+                        send_trial_expiry_email(
+                            to_email    = vps.user.email,
+                            server_name = vps.server_name or f"VPS-{vps.id}",
+                            expired_at  = expired_str,
+                        )
+                        logger.info(f"[Cron] Trial expiry email sent → {vps.user.email}")
+                    except Exception as mail_err:
+                        logger.error(f"[Cron] Trial expiry email failed: {mail_err}")
+
             except Exception as e:
                 logger.error(f"[Cron] Failed to stop VPS {vps.id}: {e}")
 
@@ -279,4 +300,4 @@ def sync_aws_credits():
 
     finally:
         db.close()
-        
+

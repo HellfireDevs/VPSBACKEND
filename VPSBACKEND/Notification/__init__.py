@@ -714,3 +714,198 @@ async def send_password_reset_email(to_email: str, token: str):
     """
     _send(to_email, "Reset Your VPS Store Password", html)
 
+
+# ─────────────────────────────────────────
+# Trial Expiry Email → User ko
+# ─────────────────────────────────────────
+
+def send_trial_expiry_email(
+    to_email:    str,
+    server_name: str,
+    expired_at:  str,
+):
+    """
+    Celery task (stop_expired_vps) se call hoga — sync.
+    Trial VPS expire hone ke baad user ko email jata hai.
+    """
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:40px 0;">
+        <tr><td align="center">
+          <table width="600" cellpadding="0" cellspacing="0"
+            style="background:#fff;border-radius:6px;overflow:hidden;border:1px solid #ddd;">
+
+            <!-- Header -->
+            <tr>
+              <td style="background:#1a1a2e;padding:28px 32px;">
+                <p style="margin:0;font-size:11px;color:#8888aa;letter-spacing:2px;text-transform:uppercase;">
+                  Trial Notification
+                </p>
+                <h1 style="margin:8px 0 0;color:#fff;font-size:22px;font-weight:600;">
+                  Your Free Trial Has Ended
+                </h1>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style="padding:32px;">
+                <p style="font-size:15px;color:#444;line-height:1.6;">
+                  Your 7-day free trial VPS <strong>{server_name}</strong> has expired and been stopped.
+                  All data on the server has been removed.
+                </p>
+
+                <table width="100%" cellpadding="0" cellspacing="0"
+                  style="border:1px solid #e8e8e8;border-radius:4px;overflow:hidden;font-size:14px;margin-top:16px;">
+                  <tr>
+                    <td style="padding:12px 16px;background:#f9f9f9;color:#888;width:35%;border-bottom:1px solid #e8e8e8;">Server Name</td>
+                    <td style="padding:12px 16px;color:#222;border-bottom:1px solid #e8e8e8;">{server_name}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:12px 16px;background:#f9f9f9;color:#888;">Expired At</td>
+                    <td style="padding:12px 16px;color:#e74c3c;">{expired_at}</td>
+                  </tr>
+                </table>
+
+                <!-- CTA -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:28px;">
+                  <tr>
+                    <td>
+                      <p style="font-size:14px;color:#444;margin:0 0 16px;">
+                        Liked the service? Upgrade to a paid plan and get full access with no limits.
+                      </p>
+                      <a href="{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/plans"
+                        style="display:inline-block;background:#1a1a2e;color:#fff;padding:12px 28px;
+                               border-radius:4px;text-decoration:none;font-size:14px;font-weight:600;">
+                        View Paid Plans →
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="background:#f4f4f4;padding:20px 32px;border-top:1px solid #e8e8e8;">
+                <p style="margin:0;font-size:12px;color:#aaa;">
+                  This is an automated notification from <strong>VPS Store</strong>. Do not reply.
+                </p>
+              </td>
+            </tr>
+
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>
+    """
+    _send(to_email, "Your Free Trial Has Ended — VPS Store", html)
+
+
+# ─────────────────────────────────────────
+# Payment Request Email → Admin ko
+# ─────────────────────────────────────────
+ def send_payment_request_email(
+    user_email: str,
+    amount:     float,
+    utr_number: str,
+    payment_id: int,
+):
+    """
+    Payments/__init__.py se call hoga jab user UTR submit kare.
+    Admin ke ADMIN_EMAIL pe jata hai.
+    """
+    admin_email = os.getenv("ADMIN_EMAIL")
+    if not admin_email:
+        return   # ADMIN_EMAIL set nahi toh skip
+
+    now           = datetime.utcnow().strftime("%d %B %Y, %I:%M %p UTC")
+    frontend_url  = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    admin_panel   = f"{frontend_url}/admin/payments"
+
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:40px 0;">
+        <tr><td align="center">
+          <table width="600" cellpadding="0" cellspacing="0"
+            style="background:#fff;border-radius:6px;overflow:hidden;border:1px solid #ddd;">
+
+            <!-- Header -->
+            <tr>
+              <td style="background:#1a1a2e;padding:28px 32px;">
+                <p style="margin:0;font-size:11px;color:#8888aa;letter-spacing:2px;text-transform:uppercase;">
+                  Admin Alert
+                </p>
+                <h1 style="margin:8px 0 0;color:#fff;font-size:22px;font-weight:600;">
+                  New Payment Request
+                </h1>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style="padding:32px;">
+                <p style="font-size:15px;color:#444;line-height:1.6;">
+                  A user has submitted a new payment request. Please verify it from the admin panel.
+                </p>
+
+                <table width="100%" cellpadding="0" cellspacing="0"
+                  style="border:1px solid #e8e8e8;border-radius:4px;overflow:hidden;font-size:14px;margin-top:16px;">
+                  <tr>
+                    <td style="padding:12px 16px;background:#f9f9f9;color:#888;width:35%;border-bottom:1px solid #e8e8e8;">Payment ID</td>
+                    <td style="padding:12px 16px;color:#222;border-bottom:1px solid #e8e8e8;">#{payment_id}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:12px 16px;background:#f9f9f9;color:#888;border-bottom:1px solid #e8e8e8;">User</td>
+                    <td style="padding:12px 16px;color:#222;border-bottom:1px solid #e8e8e8;">{user_email}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:12px 16px;background:#f9f9f9;color:#888;border-bottom:1px solid #e8e8e8;">Amount</td>
+                    <td style="padding:12px 16px;color:#27ae60;font-weight:bold;border-bottom:1px solid #e8e8e8;">₹{amount:.2f}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:12px 16px;background:#f9f9f9;color:#888;border-bottom:1px solid #e8e8e8;">UTR Number</td>
+                    <td style="padding:12px 16px;color:#222;font-family:monospace;border-bottom:1px solid #e8e8e8;">{utr_number}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:12px 16px;background:#f9f9f9;color:#888;">Submitted At</td>
+                    <td style="padding:12px 16px;color:#222;">{now}</td>
+                  </tr>
+                </table>
+
+                <!-- CTA -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:28px;">
+                  <tr>
+                    <td>
+                      <a href="{admin_panel}"
+                        style="display:inline-block;background:#27ae60;color:#fff;padding:12px 28px;
+                               border-radius:4px;text-decoration:none;font-size:14px;font-weight:600;">
+                        Verify Payment →
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="background:#f4f4f4;padding:20px 32px;border-top:1px solid #e8e8e8;">
+                <p style="margin:0;font-size:12px;color:#aaa;">
+                  This is an automated alert from <strong>VPS Store</strong>. Do not reply.
+                </p>
+              </td>
+            </tr>
+
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>
+    """
+    _send(admin_email, f"⚡ New Payment ₹{amount:.2f} — #{payment_id} | VPS Store", html)

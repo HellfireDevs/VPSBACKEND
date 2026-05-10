@@ -58,8 +58,9 @@ def init_db():
     from VPSBACKEND.Database.models import (  # noqa: F401
         User, AWSAccount, VPSOrder,
         Trial, Payment, SupportTicket,
-        TicketReply, Appeal, Broadcast, PortRule
+        TicketReply, Appeal, Broadcast,
+        PortRule, PlanStock, PasswordResetToken,
     )
     Base.metadata.create_all(bind=engine)
     print("✅ Database tables created.")
-  
+    

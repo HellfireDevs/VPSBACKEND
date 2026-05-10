@@ -1,1 +1,14 @@
-
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary     # PostgreSQL
+boto3               # AWS
+celery              # Queue
+redis               # Queue broker
+bcrypt              # Password hash
+pyjwt               # JWT
+cryptography        # AES encrypt
+slowapi             # Rate limiting
+python-dotenv       # ENV vars
+httpx               # HTTP requests (VPN check)
+jinja2              # Email templates

@@ -606,4 +606,111 @@ def send_vps_created_email_sync(
     </html>
     """
     _send(to_email, "Your VPS Server is Ready — VPS Store", html)
-    
+
+
+# ─────────────────────────────────────────
+# Password Reset Email
+# Ye function Notification/__init__.py ke
+# SABSE NEECHE paste karo
+# ─────────────────────────────────────────
+
+async def send_password_reset_email(to_email: str, token: str):
+    import os
+    from datetime import datetime
+
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    reset_link   = f"{frontend_url}/reset-password?token={token}"
+    now          = datetime.utcnow().strftime("%d %B %Y, %I:%M %p UTC")
+    expire_hours = 1
+
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:40px 0;">
+        <tr><td align="center">
+          <table width="600" cellpadding="0" cellspacing="0"
+            style="background:#fff;border-radius:6px;overflow:hidden;border:1px solid #ddd;">
+
+            <!-- Header -->
+            <tr>
+              <td style="background:#1a1a2e;padding:28px 32px;">
+                <p style="margin:0;font-size:11px;color:#8888aa;letter-spacing:2px;text-transform:uppercase;">Account Security</p>
+                <h1 style="margin:8px 0 0;color:#fff;font-size:22px;font-weight:600;">Reset Your Password</h1>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style="padding:32px;">
+                <p style="font-size:15px;color:#444;line-height:1.6;margin:0 0 20px;">
+                  We received a password reset request for your <strong>VPS Store</strong> account on <strong>{now}</strong>.
+                  Click the button below to set a new password.
+                </p>
+
+                <!-- CTA Button -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;">
+                  <tr>
+                    <td align="center">
+                      <a href="{reset_link}"
+                        style="display:inline-block;background:#4f46e5;color:#fff;
+                               font-size:15px;font-weight:600;padding:14px 32px;
+                               border-radius:6px;text-decoration:none;letter-spacing:0.3px;">
+                        Reset Password
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Expiry notice -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">
+                  <tr>
+                    <td style="background:#f0f4ff;border:1px solid #c7d2fe;border-left:4px solid #4f46e5;
+                               border-radius:4px;padding:14px 18px;">
+                      <p style="margin:0;font-size:13px;color:#3730a3;line-height:1.6;">
+                        ⏱ This link expires in <strong>{expire_hours} hour</strong>.
+                        After that, you'll need to request a new one.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Fallback link -->
+                <p style="font-size:13px;color:#888;margin-top:24px;line-height:1.6;">
+                  Button kaam nahi kar raha? Ye link copy karke browser mein paste karo:<br>
+                  <a href="{reset_link}" style="color:#4f46e5;word-break:break-all;">{reset_link}</a>
+                </p>
+
+                <!-- Warning -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+                  <tr>
+                    <td style="background:#fef9ec;border:1px solid #f0d080;border-left:4px solid #f0a500;
+                               border-radius:4px;padding:14px 18px;">
+                      <p style="margin:0;font-size:13px;color:#7a5c00;line-height:1.6;">
+                        <strong>Request nahi kiya?</strong>
+                        Agar aapne password reset request nahi kiya, toh is email ko ignore karein.
+                        Aapka password safe hai.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="background:#f4f4f4;padding:20px 32px;border-top:1px solid #e8e8e8;">
+                <p style="margin:0;font-size:12px;color:#aaa;">
+                  This is an automated notification from <strong>VPS Store</strong>. Do not reply to this email.
+                </p>
+              </td>
+            </tr>
+
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>
+    """
+    _send(to_email, "Reset Your VPS Store Password", html)
+

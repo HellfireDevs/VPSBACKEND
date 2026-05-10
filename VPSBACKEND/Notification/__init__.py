@@ -525,3 +525,85 @@ async def send_vps_created_email(
     </html>
     """
     _send(to_email, "Your VPS Server is Ready — VPS Store", html)
+
+# ─────────────────────────────────────────
+# Sync Wrappers (Celery tasks ke liye)
+# asyncio.run() Celery mein crash karta hai
+# isliye yeh sync versions use karo
+# ─────────────────────────────────────────
+
+def send_vps_created_email_sync(
+    to_email: str, server_name: str, ip: str,
+    instance_type: str, os_name: str, expires_at: str
+):
+    """Celery task se call karo — async nahi."""
+    from datetime import datetime
+    now = datetime.utcnow().strftime("%d %B %Y, %I:%M %p UTC")
+
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:40px 0;">
+        <tr><td align="center">
+          <table width="600" cellpadding="0" cellspacing="0"
+            style="background:#fff;border-radius:6px;overflow:hidden;border:1px solid #ddd;">
+            <tr>
+              <td style="background:#1a1a2e;padding:28px 32px;">
+                <p style="margin:0;font-size:11px;color:#8888aa;letter-spacing:2px;text-transform:uppercase;">
+                  VPS Notification
+                </p>
+                <h1 style="margin:8px 0 0;color:#fff;font-size:22px;font-weight:600;">
+                  Your VPS is Ready
+                </h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px;">
+                <p style="font-size:15px;color:#444;line-height:1.6;">
+                  Your VPS server has been created and is ready to use.
+                </p>
+                <table width="100%" cellpadding="0" cellspacing="0"
+                  style="border:1px solid #e8e8e8;border-radius:4px;overflow:hidden;font-size:14px;margin-top:16px;">
+                  <tr>
+                    <td style="padding:12px 16px;background:#f9f9f9;color:#888;width:35%;border-bottom:1px solid #e8e8e8;">Server Name</td>
+                    <td style="padding:12px 16px;color:#222;border-bottom:1px solid #e8e8e8;">{server_name}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:12px 16px;background:#f9f9f9;color:#888;border-bottom:1px solid #e8e8e8;">IP Address</td>
+                    <td style="padding:12px 16px;color:#222;border-bottom:1px solid #e8e8e8;font-family:monospace;">{ip}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:12px 16px;background:#f9f9f9;color:#888;border-bottom:1px solid #e8e8e8;">Instance Type</td>
+                    <td style="padding:12px 16px;color:#222;border-bottom:1px solid #e8e8e8;">{instance_type}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:12px 16px;background:#f9f9f9;color:#888;border-bottom:1px solid #e8e8e8;">Operating System</td>
+                    <td style="padding:12px 16px;color:#222;border-bottom:1px solid #e8e8e8;">{os_name}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:12px 16px;background:#f9f9f9;color:#888;border-bottom:1px solid #e8e8e8;">Created At</td>
+                    <td style="padding:12px 16px;color:#222;border-bottom:1px solid #e8e8e8;">{now}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:12px 16px;background:#f9f9f9;color:#888;">Expires At</td>
+                    <td style="padding:12px 16px;color:#222;">{expires_at}</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#f4f4f4;padding:20px 32px;border-top:1px solid #e8e8e8;">
+                <p style="margin:0;font-size:12px;color:#aaa;">
+                  This is an automated notification from <strong>VPS Store</strong>. Do not reply.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>
+    """
+    _send(to_email, "Your VPS Server is Ready — VPS Store", html)
+    

@@ -62,6 +62,19 @@ async def submit_utr(
     db.commit()
     db.refresh(payment)
 
+    # ── Admin ko email bhejo ──
+    try:
+        from VPSBACKEND.Notification import send_payment_request_email
+        submitter = db.query(User).filter(User.id == current_user["user_id"]).first()
+        send_payment_request_email(
+            user_email = submitter.email if submitter else "unknown",
+            amount     = amount,
+            utr_number = utr_number,
+            payment_id = payment.id,
+        )
+    except Exception:
+        pass   # Email fail ho toh payment block mat karo
+
     return {
         "message":      "Payment submitted. Admin will verify within 24 hours",
         "payment_id":   payment.id,
@@ -147,4 +160,4 @@ async def wallet_balance(
 # wallet_router ko main router mein merge
 # ─────────────────────────────────────────
 router.include_router(wallet_router)
-                                    
+
